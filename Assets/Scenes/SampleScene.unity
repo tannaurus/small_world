@@ -155,8 +155,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28fed72572a4744ab91b5fa0630e50b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  chunkLength: 1000
-  scale: 1
+  chunkLength: 100
+  scale: 12
 --- !u!64 &214857010
 MeshCollider:
   m_ObjectHideFlags: 0
