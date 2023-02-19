@@ -6,6 +6,7 @@ public class TerrainChunk : MonoBehaviour
 {
     // length of chunk in quads
     public int chunkLength = 100;
+    public float scale = 1f;
     
     private Vector3[] chunkVertices;
     private int[] chunkTriangles;
@@ -31,7 +32,7 @@ public class TerrainChunk : MonoBehaviour
         int iterations = 0;
         for (int x = 0; x < chunkLength; x++) {
             for (int z = 0; z < chunkLength; z++) {
-                Quad quad = new Quad(new Vector3(x, 0, z), iterations);
+                Quad quad = new Quad(new Vector3(x, 0, z), iterations, scale);
                 for (int q = 0; q < 6; q++) {
                     chunkVertices[iterations] = quad.vertices[q];
                     chunkTriangles[iterations] = quad.triangles[q];
@@ -41,6 +42,7 @@ public class TerrainChunk : MonoBehaviour
             }
         }
         Mesh mesh = new Mesh();
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         mesh.vertices = chunkVertices;
         mesh.triangles = chunkTriangles;
         mesh.normals = chunkNormals;
@@ -51,19 +53,19 @@ public class TerrainChunk : MonoBehaviour
 }
 
 
-struct Quad {
+class Quad {
     public Vector3[] vertices;
     public int[] triangles;
     public Vector3[] normals;
 
-    public Quad(Vector3 root, int meshIndex) {
+    public Quad(Vector3 root, int meshIndex, float scale) {
         Vector3[] v = new Vector3[] { 
-            new Vector3(root.x + 1, 0, root.z + 1),
-            new Vector3(root.x + 1, 0, root.z),   
-            new Vector3(root.x, 0, root.z + 1),
-            new Vector3(root.x, 0, root.z + 1),
-            new Vector3(root.x + 1, 0, root.z), 
-            new Vector3(root.x, 0, root.z),
+            this.GetVertPosition(root.x + 1, root.z + 1, scale),
+            this.GetVertPosition(root.x + 1, root.z, scale),
+            this.GetVertPosition(root.x, root.z + 1, scale),
+            this.GetVertPosition(root.x, root.z + 1, scale),
+            this.GetVertPosition(root.x + 1, root.z, scale),
+            this.GetVertPosition(root.x, root.z, scale) 
         };
 
         // populate triangles and normals
@@ -71,11 +73,16 @@ struct Quad {
         Vector3[] n = new Vector3[6];
         for (int i = 0; i < 6; i++) {
             t[i] = meshIndex + i;
-            n[i] = Vector3.up;
+            n[i] = Vector3.right;
         }
 
         this.vertices = v;
         this.triangles = t;
         this.normals = n;
+    }
+
+    private Vector3 GetVertPosition(float x, float z, float scale) {
+        float height = Mathf.PerlinNoise(x * 0.7f, z * 0.7f) * scale;
+        return new Vector3(x, height, z);
     }
 }
