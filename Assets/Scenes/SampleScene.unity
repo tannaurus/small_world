@@ -156,7 +156,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   chunkLength: 100
-  scale: 12
+  scale: 20
+  green: {r: 116, g: 192, b: 92, a: 1}
+  terrainMaxHeight: 6
+  terrainScale: 10
 --- !u!64 &214857010
 MeshCollider:
   m_ObjectHideFlags: 0
