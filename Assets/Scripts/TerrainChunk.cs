@@ -71,7 +71,6 @@ public class TerrainChunk : MonoBehaviour
                     chunkUvs[iterations] = new Vector2(quad.vertices[q].x, quad.vertices[q].z); // TODO: move height calculation for verts up here too
                     float sample = terrainNoise.getNoise(new Vector3(x, 0, z), "Height");
                     float normalizedSample = sample / terrainMaxHeight;
-                    Debug.Log(normalizedSample);
                     meshColors[iterations] = new Color(
                         green.r * normalizedSample,
                         green.g * normalizedSample,
