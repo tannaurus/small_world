@@ -71,7 +71,7 @@ public class PlayerCamera : MonoBehaviour
         transform.localRotation = Quaternion.Euler(orbitAngles);
     }
 
-    void LateUpdate()
+    void Update()
     {
         UpdateFocusPoint();
         Quaternion lookRotation;

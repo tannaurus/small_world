@@ -4,11 +4,14 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public float movementSpeed = 1f;
-    public float turningSpeed = 1f;
+    [SerializeField]
+    float movementSpeed = 1f;
 
-    float speedIncreaseRate = 1000f;
-    Vector3 currentVelocity = new Vector3(0, 0, 0);
+    [SerializeField]
+    float turningSpeed = 1f;
+
+    [SerializeField]
+    float jumpForce = 100f;
 
     Rigidbody rb;
     CharacterController controller;
@@ -21,14 +24,45 @@ public class PlayerMovement : MonoBehaviour
     }
 
     // Update is called once per frame
-    void FixedUpdate()
+
+    void Update()
     {
-        float turn = Input.GetAxis("Horizontal") * turningSpeed * Time.deltaTime;
-        transform.TransformDirection(new Vector3(0, 0, turn));
-        transform.Rotate(0, turn, 0);
-        float move = Input.GetAxis("Vertical") * movementSpeed * Time.deltaTime;
-        //rb.AddForce(Vector3.back * move);
-        transform.Translate(0, 0, move);
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            rb.AddForce(Vector3.up * 100 * jumpForce);
+            Debug.Log("Jump!");
+        }
+
+        float turnMultiplier;
+        RaycastHit hit;
+        bool onGround = Physics.Raycast(
+            transform.position,
+            transform.TransformDirection(Vector3.down),
+            out hit,
+            1f
+        );
+        if (onGround)
+        {
+            turnMultiplier = 200f;
+        }
+        else
+        {
+            Debug.Log("in the air");
+            turnMultiplier = 100f;
+        }
+        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D))
+        {
+            Debug.Log("Rotating");
+            float turn =
+                Input.GetAxis("Horizontal") * turnMultiplier * turningSpeed * Time.deltaTime;
+            transform.Rotate(0, turn, 0);
+        }
+        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.S))
+        {
+            Debug.Log("Moving");
+            float move = Input.GetAxis("Vertical") * 10 * movementSpeed * Time.deltaTime;
+            transform.Translate(new Vector3(0, 0, move));
+        }
     }
 
     void LockRotation()
