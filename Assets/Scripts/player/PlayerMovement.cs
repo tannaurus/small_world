@@ -23,14 +23,11 @@ public class PlayerMovement : MonoBehaviour
         LockRotation();
     }
 
-    // Update is called once per frame
-
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
             rb.AddForce(Vector3.up * 100 * jumpForce);
-            Debug.Log("Jump!");
         }
 
         float turnMultiplier;
@@ -47,19 +44,16 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            Debug.Log("in the air");
             turnMultiplier = 100f;
         }
         if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D))
         {
-            Debug.Log("Rotating");
             float turn =
                 Input.GetAxis("Horizontal") * turnMultiplier * turningSpeed * Time.deltaTime;
             transform.Rotate(0, turn, 0);
         }
         if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.S))
         {
-            Debug.Log("Moving");
             float move = Input.GetAxis("Vertical") * 10 * movementSpeed * Time.deltaTime;
             transform.Translate(new Vector3(0, 0, move));
         }

@@ -5,25 +5,18 @@ using UnityEngine;
 public class TerrainChunk : MonoBehaviour
 {
     // length of chunk in quads
-    public int chunkLength = 100;
-    public float scale = 1f;
+    public int chunkLength = 32;
 
     private Color green;
 
     private Vector3[] chunkVertices;
     private int[] chunkTriangles;
-    private Vector3[] chunkNormals;
-    private Vector2[] chunkUvs;
 
-    private Noise terrainNoise;
     private MeshRenderer meshRenderer;
 
     private Color[] meshColors;
 
-    public float terrainMaxHeight = 3f;
-    public float terrainScale = 10f;
-
-    void Start()
+    void Awake()
     {
         green = new Color(106f / 255, 192f / 255, 82f / 255);
         // determine how many vertices we need for the specified chunk size
@@ -37,39 +30,46 @@ public class TerrainChunk : MonoBehaviour
         // create new arrays to contain all of our vertices
         chunkVertices = new Vector3[totalVerticesCount];
         chunkTriangles = new int[totalVerticesCount];
-        chunkUvs = new Vector2[totalVerticesCount];
         meshColors = new Color[totalVerticesCount];
 
         // initialize map texture
         meshRenderer = GetComponent<MeshRenderer>();
+    }
 
-        // initialize noise
-        terrainNoise = new Noise();
-        terrainNoise.addChannel(
-            new Channel(
-                "Height",
-                Algorithm.Turbulence3d,
-                terrainScale,
-                NoiseStyle.Linear,
-                0.0f,
-                terrainMaxHeight,
-                Edge.Smooth
-            ).setFractal(4, 1.0f, 0.5f)
-        );
+    void ApplyUpdatesToMesh()
+    {
+        Mesh mesh = new Mesh();
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        mesh.vertices = chunkVertices;
+        mesh.triangles = chunkTriangles;
+        mesh.colors = meshColors;
+        mesh.RecalculateNormals();
 
+        GetComponent<MeshFilter>().mesh = mesh;
+        GetComponent<MeshCollider>().sharedMesh = mesh;
+    }
+
+    public void GenerateChunk(Vector3 position, Noise terrainNoise, int terrainMaxHeight)
+    {
         // populate arrays with vertices
         int iterations = 0;
         for (int x = 0; x < chunkLength; x++)
         {
             for (int z = 0; z < chunkLength; z++)
             {
-                Quad quad = new Quad(new Vector3(x, 0, z), iterations, terrainNoise);
+                Quad quad = new Quad(
+                    new Vector3(x + position.x, 0, z + position.z),
+                    iterations,
+                    terrainNoise
+                );
                 for (int q = 0; q < 6; q++)
                 {
                     chunkVertices[iterations] = quad.vertices[q];
                     chunkTriangles[iterations] = quad.triangles[q];
-                    chunkUvs[iterations] = new Vector2(quad.vertices[q].x, quad.vertices[q].z); // TODO: move height calculation for verts up here too
-                    float sample = terrainNoise.getNoise(new Vector3(x, 0, z), "Height");
+                    float sample = terrainNoise.getNoise(
+                        new Vector3(x + position.x, 0, z + position.z),
+                        "Height"
+                    );
                     float normalizedSample = sample / terrainMaxHeight;
                     meshColors[iterations] = new Color(
                         green.r * normalizedSample,
@@ -82,20 +82,6 @@ public class TerrainChunk : MonoBehaviour
         }
 
         ApplyUpdatesToMesh();
-    }
-
-    void ApplyUpdatesToMesh()
-    {
-        Mesh mesh = new Mesh();
-        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        mesh.vertices = chunkVertices;
-        mesh.triangles = chunkTriangles;
-        mesh.colors = meshColors;
-        // mesh.uv = chunkUvs;
-        mesh.RecalculateNormals();
-
-        GetComponent<MeshFilter>().mesh = mesh;
-        GetComponent<MeshCollider>().sharedMesh = mesh;
     }
 }
 
