@@ -57,17 +57,13 @@ public class TerrainChunk : MonoBehaviour
         {
             for (int z = 0; z < chunkLength; z++)
             {
-                Quad quad = new Quad(
-                    new Vector3(x + position.x, 0, z + position.z),
-                    iterations,
-                    terrainNoise
-                );
+                Quad quad = new Quad(position, new Vector3(x, 0, z), iterations, terrainNoise);
                 for (int q = 0; q < 6; q++)
                 {
                     chunkVertices[iterations] = quad.vertices[q];
                     chunkTriangles[iterations] = quad.triangles[q];
                     float sample = terrainNoise.getNoise(
-                        new Vector3(x + position.x, 0, z + position.z),
+                        new Vector3(position.x + x, 0, position.z + z),
                         "Height"
                     );
                     float normalizedSample = sample / terrainMaxHeight;
@@ -90,16 +86,16 @@ class Quad
     public Vector3[] vertices;
     public int[] triangles;
 
-    public Quad(Vector3 root, int meshIndex, Noise terrainNoise)
+    public Quad(Vector3 relativeLocation, Vector3 root, int meshIndex, Noise terrainNoise)
     {
         Vector3[] v = new Vector3[]
         {
-            this.GetVertPosition(root.x + 1, root.z + 1, terrainNoise),
-            this.GetVertPosition(root.x + 1, root.z, terrainNoise),
-            this.GetVertPosition(root.x, root.z + 1, terrainNoise),
-            this.GetVertPosition(root.x, root.z + 1, terrainNoise),
-            this.GetVertPosition(root.x + 1, root.z, terrainNoise),
-            this.GetVertPosition(root.x, root.z, terrainNoise)
+            this.GetVertPosition(root.x + 1, root.z + 1, relativeLocation, terrainNoise),
+            this.GetVertPosition(root.x + 1, root.z, relativeLocation, terrainNoise),
+            this.GetVertPosition(root.x, root.z + 1, relativeLocation, terrainNoise),
+            this.GetVertPosition(root.x, root.z + 1, relativeLocation, terrainNoise),
+            this.GetVertPosition(root.x + 1, root.z, relativeLocation, terrainNoise),
+            this.GetVertPosition(root.x, root.z, relativeLocation, terrainNoise)
         };
 
         // populate triangles and normals
@@ -114,9 +110,12 @@ class Quad
         this.triangles = t;
     }
 
-    private Vector3 GetVertPosition(float x, float z, Noise terrainNoise)
+    private Vector3 GetVertPosition(float x, float z, Vector3 relativeLocation, Noise terrainNoise)
     {
-        float height = terrainNoise.getNoise(new Vector3(x, 0, z), "Height");
+        float height = terrainNoise.getNoise(
+            new Vector3(relativeLocation.x + x, 0, relativeLocation.z + z),
+            "Height"
+        );
         return new Vector3(x, height, z);
     }
 }

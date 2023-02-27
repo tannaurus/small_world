@@ -46,7 +46,7 @@ public class TerrainManager : MonoBehaviour
             {
                 TerrainChunk spawnedChunk = Instantiate(
                         chunk,
-                        new Vector3(0, 0, 0),
+                        new Vector3(x * chunkLength, 0, z * chunkLength),
                         Quaternion.identity
                     )
                     .GetComponent<TerrainChunk>();
