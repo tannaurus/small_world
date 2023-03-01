@@ -18,8 +18,8 @@ public class TerrainManager : MonoBehaviour
     private List<List<TerrainChunk>> chunks;
     private Noise terrainNoise;
 
-    public int terrainMaxHeight = 6;
-    public int terrainScale = 15;
+    public int maxHeight = 6;
+    public int scale = 15;
 
     // Start is called before the first frame update
     void Start()
@@ -29,10 +29,10 @@ public class TerrainManager : MonoBehaviour
             new Channel(
                 "Height",
                 Algorithm.Perlin3d,
-                terrainScale,
+                scale,
                 NoiseStyle.Second,
                 1f,
-                terrainMaxHeight,
+                maxHeight,
                 Edge.Smooth
             ).setFractal(4, 1.0f, 0.5f)
         );
@@ -53,14 +53,11 @@ public class TerrainManager : MonoBehaviour
                 spawnedChunk.GenerateChunk(
                     new Vector3(x * chunkLength, 0, z * chunkLength),
                     terrainNoise,
-                    terrainMaxHeight
+                    maxHeight
                 );
                 xChunks.Insert(z, spawnedChunk);
             }
             chunks.Insert(x, xChunks);
         }
     }
-
-    // Update is called once per frame
-    void Update() { }
 }

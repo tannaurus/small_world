@@ -36,6 +36,38 @@ public class TerrainChunk : MonoBehaviour
         meshRenderer = GetComponent<MeshRenderer>();
     }
 
+    public void GenerateChunk(Vector3 worldPosition, Noise noise, int maxHeight)
+    {
+        // populate arrays with vertices
+        int verticesIndex = 0;
+        for (int x = 0; x < chunkLength; x++)
+        {
+            for (int z = 0; z < chunkLength; z++)
+            {
+                Vector3 relativePosition = new Vector3(x, 0, z);
+                Quad quad = new Quad(
+                    worldPosition,
+                    relativePosition,
+                    maxHeight,
+                    verticesIndex,
+                    noise,
+                    green
+                );
+                quad.GenerateQuad();
+                for (int q = 0; q < 6; q++)
+                {
+                    chunkVertices[verticesIndex] = quad.vertices[q];
+                    chunkTriangles[verticesIndex] = quad.triangles[q];
+                    meshColors[verticesIndex] = quad.colors[q];
+
+                    verticesIndex++;
+                }
+            }
+        }
+
+        ApplyUpdatesToMesh();
+    }
+
     void ApplyUpdatesToMesh()
     {
         Mesh mesh = new Mesh();
@@ -48,74 +80,87 @@ public class TerrainChunk : MonoBehaviour
         GetComponent<MeshFilter>().mesh = mesh;
         GetComponent<MeshCollider>().sharedMesh = mesh;
     }
-
-    public void GenerateChunk(Vector3 position, Noise terrainNoise, int terrainMaxHeight)
-    {
-        // populate arrays with vertices
-        int iterations = 0;
-        for (int x = 0; x < chunkLength; x++)
-        {
-            for (int z = 0; z < chunkLength; z++)
-            {
-                Quad quad = new Quad(position, new Vector3(x, 0, z), iterations, terrainNoise);
-                for (int q = 0; q < 6; q++)
-                {
-                    chunkVertices[iterations] = quad.vertices[q];
-                    chunkTriangles[iterations] = quad.triangles[q];
-                    float sample = terrainNoise.getNoise(
-                        new Vector3(position.x + x, 0, position.z + z),
-                        "Height"
-                    );
-                    float normalizedSample = sample / terrainMaxHeight;
-                    meshColors[iterations] = new Color(
-                        green.r * normalizedSample,
-                        green.g * normalizedSample,
-                        green.b * normalizedSample
-                    );
-                    iterations++;
-                }
-            }
-        }
-
-        ApplyUpdatesToMesh();
-    }
 }
 
 class Quad
 {
     public Vector3[] vertices;
     public int[] triangles;
+    public Color[] colors;
 
-    public Quad(Vector3 relativeLocation, Vector3 root, int meshIndex, Noise terrainNoise)
+    private Vector3 worldLocation;
+    private Vector3 relativeLocation;
+
+    private int maxHeight;
+    private int meshIndex;
+
+    private Noise noise;
+    private Color baseColor;
+
+    public Quad(
+        Vector3 worldLocation,
+        Vector3 relativeLocation,
+        int maxHeight,
+        int meshIndex,
+        Noise noise,
+        Color baseColor
+    )
+    {
+        this.worldLocation = worldLocation;
+        this.relativeLocation = relativeLocation;
+        this.maxHeight = maxHeight;
+        this.meshIndex = meshIndex;
+        this.noise = noise;
+        this.baseColor = baseColor;
+    }
+
+    public void GenerateQuad()
     {
         Vector3[] v = new Vector3[]
         {
-            this.GetVertPosition(root.x + 1, root.z + 1, relativeLocation, terrainNoise),
-            this.GetVertPosition(root.x + 1, root.z, relativeLocation, terrainNoise),
-            this.GetVertPosition(root.x, root.z + 1, relativeLocation, terrainNoise),
-            this.GetVertPosition(root.x, root.z + 1, relativeLocation, terrainNoise),
-            this.GetVertPosition(root.x + 1, root.z, relativeLocation, terrainNoise),
-            this.GetVertPosition(root.x, root.z, relativeLocation, terrainNoise)
+            this.GetVertPosition(relativeLocation.x + 1, relativeLocation.z + 1),
+            this.GetVertPosition(relativeLocation.x + 1, relativeLocation.z),
+            this.GetVertPosition(relativeLocation.x, relativeLocation.z + 1),
+            this.GetVertPosition(relativeLocation.x, relativeLocation.z + 1),
+            this.GetVertPosition(relativeLocation.x + 1, relativeLocation.z),
+            this.GetVertPosition(relativeLocation.x, relativeLocation.z)
         };
 
         // populate triangles and normals
         int[] t = new int[6];
-        Vector3[] n = new Vector3[6];
+        this.colors = new Color[6];
         for (int i = 0; i < 6; i++)
         {
             t[i] = meshIndex + i;
+            this.colors[i] = this.GetVertColor();
         }
 
         this.vertices = v;
         this.triangles = t;
     }
 
-    private Vector3 GetVertPosition(float x, float z, Vector3 relativeLocation, Noise terrainNoise)
+    private float SampleNoise(float relativeX, float relativeZ)
     {
-        float height = terrainNoise.getNoise(
-            new Vector3(relativeLocation.x + x, 0, relativeLocation.z + z),
+        return this.noise.getNoise(
+            new Vector3(this.worldLocation.x + relativeX, 0, this.worldLocation.z + relativeZ),
             "Height"
         );
-        return new Vector3(x, height, z);
+    }
+
+    private Vector3 GetVertPosition(float vertX, float vertZ)
+    {
+        float height = this.SampleNoise(vertX, vertZ);
+        return new Vector3(vertX, height, vertZ);
+    }
+
+    private Color GetVertColor()
+    {
+        float height = this.SampleNoise(this.relativeLocation.x, this.relativeLocation.z);
+        float normalizedHeight = height / maxHeight;
+        return new Color(
+            this.baseColor.r * normalizedHeight,
+            this.baseColor.g * normalizedHeight,
+            this.baseColor.b * normalizedHeight
+        );
     }
 }
