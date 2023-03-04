@@ -10,9 +10,16 @@ public class TerrainChunk : MonoBehaviour
     private Vector3[] chunkVertices;
     private int[] chunkTriangles;
 
-    private MeshRenderer meshRenderer;
+    private MeshFilter _meshFilter;
+    private MeshCollider _meshCollider;
 
     private Color[] meshColors;
+
+    void Awake()
+    {
+        _meshFilter = GetComponent<MeshFilter>();
+        _meshCollider = GetComponent<MeshCollider>();
+    }
 
     public TerrainChunk New(Vector3 position, Noise noise, int maxHeight, int chunkLength)
     {
@@ -32,7 +39,6 @@ public class TerrainChunk : MonoBehaviour
         meshColors = new Color[totalVerticesCount];
 
         // initialize map texture
-        meshRenderer = GetComponent<MeshRenderer>();
 
         // populate arrays with vertices
         int verticesIndex = 0;
@@ -60,11 +66,13 @@ public class TerrainChunk : MonoBehaviour
             }
         }
 
-        ApplyUpdatesToMesh();
+        Mesh mesh = BuildNewMesh();
+        ApplyUpdatesToMesh(mesh);
+
         return this;
     }
 
-    void ApplyUpdatesToMesh()
+    Mesh BuildNewMesh()
     {
         Mesh mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
@@ -73,8 +81,19 @@ public class TerrainChunk : MonoBehaviour
         mesh.colors = meshColors;
         mesh.RecalculateNormals();
 
-        GetComponent<MeshFilter>().mesh = mesh;
-        GetComponent<MeshCollider>().sharedMesh = mesh;
+        return mesh;
+    }
+
+    void ApplyUpdatesToMesh(Mesh mesh)
+    {
+        ApplyColorsToMesh(mesh);
+        _meshFilter.mesh = mesh;
+        _meshCollider.sharedMesh = mesh;
+    }
+
+    void ApplyColorsToMesh(Mesh mesh)
+    {
+        mesh.colors = meshColors;
     }
 }
 
