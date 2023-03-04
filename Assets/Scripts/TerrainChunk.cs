@@ -4,9 +4,7 @@ using UnityEngine;
 
 public class TerrainChunk : MonoBehaviour
 {
-    // length of chunk in quads
-    public int chunkLength = 32;
-
+    public Vector3 worldPosition;
     private Color green;
 
     private Vector3[] chunkVertices;
@@ -16,8 +14,9 @@ public class TerrainChunk : MonoBehaviour
 
     private Color[] meshColors;
 
-    void Awake()
+    public TerrainChunk New(Vector3 position, Noise noise, int maxHeight, int chunkLength)
     {
+        worldPosition = position;
         green = new Color(106f / 255, 192f / 255, 82f / 255);
         // determine how many vertices we need for the specified chunk size
         // 2 polygons per quad
@@ -34,26 +33,22 @@ public class TerrainChunk : MonoBehaviour
 
         // initialize map texture
         meshRenderer = GetComponent<MeshRenderer>();
-    }
 
-    public void GenerateChunk(Vector3 worldPosition, Noise noise, int maxHeight)
-    {
         // populate arrays with vertices
         int verticesIndex = 0;
         for (int x = 0; x < chunkLength; x++)
         {
             for (int z = 0; z < chunkLength; z++)
             {
-                Vector3 relativePosition = new Vector3(x, 0, z);
+                Vector3 relativeChunkPosition = new Vector3(x, 0, z);
                 Quad quad = new Quad(
                     worldPosition,
-                    relativePosition,
+                    relativeChunkPosition,
                     maxHeight,
                     verticesIndex,
                     noise,
                     green
-                );
-                quad.GenerateQuad();
+                ).New();
                 for (int q = 0; q < 6; q++)
                 {
                     chunkVertices[verticesIndex] = quad.vertices[q];
@@ -66,6 +61,7 @@ public class TerrainChunk : MonoBehaviour
         }
 
         ApplyUpdatesToMesh();
+        return this;
     }
 
     void ApplyUpdatesToMesh()
@@ -114,7 +110,7 @@ class Quad
         this.baseColor = baseColor;
     }
 
-    public void GenerateQuad()
+    public Quad New()
     {
         Vector3[] v = new Vector3[]
         {
@@ -137,25 +133,32 @@ class Quad
 
         this.vertices = v;
         this.triangles = t;
+
+        return this;
     }
 
-    private float SampleNoise(float relativeX, float relativeZ)
+    private float SampleNoise(string channel, float relativeX, float relativeZ)
     {
         return this.noise.getNoise(
             new Vector3(this.worldLocation.x + relativeX, 0, this.worldLocation.z + relativeZ),
-            "Height"
+            channel
         );
     }
 
     private Vector3 GetVertPosition(float vertX, float vertZ)
     {
-        float height = this.SampleNoise(vertX, vertZ);
+        float height = this.SampleNoise("base_height", vertX, vertZ);
+
         return new Vector3(vertX, height, vertZ);
     }
 
     private Color GetVertColor()
     {
-        float height = this.SampleNoise(this.relativeLocation.x, this.relativeLocation.z);
+        float height = this.SampleNoise(
+            "base_height",
+            this.relativeLocation.x,
+            this.relativeLocation.z
+        );
         float normalizedHeight = height / maxHeight;
         return new Color(
             this.baseColor.r * normalizedHeight,

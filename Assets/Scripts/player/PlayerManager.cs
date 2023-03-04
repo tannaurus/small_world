@@ -8,9 +8,4 @@ public class PlayerManager : MonoBehaviour
     {
         return transform.position;
     }
-
-    public Vector3 GetChunkPosition(int chunkSize)
-    {
-        return new Vector3(transform.position.x / chunkSize, 0, transform.position.z / chunkSize);
-    }
 }

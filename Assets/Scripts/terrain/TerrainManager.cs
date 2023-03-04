@@ -8,18 +8,15 @@ public class TerrainManager : MonoBehaviour
     GameObject chunk;
 
     [SerializeField]
-    PlayerManager player;
+    int drawDistance = 10;
 
-    [SerializeField]
-    int initialWorldSize = 3;
-
-    private int chunkLength;
-
-    private List<List<TerrainChunk>> chunks;
+    private PlayerManager playerManager;
+    private Dictionary<int, Dictionary<int, TerrainChunk>> chunks;
     private Noise terrainNoise;
 
-    public int maxHeight = 6;
-    public int scale = 15;
+    private int maxHeight = 6;
+    private int scale = 15;
+    private int chunkLength = 32;
 
     // Start is called before the first frame update
     void Start()
@@ -27,7 +24,7 @@ public class TerrainManager : MonoBehaviour
         terrainNoise = new Noise();
         terrainNoise.addChannel(
             new Channel(
-                "Height",
+                "base_height",
                 Algorithm.Perlin3d,
                 scale,
                 NoiseStyle.Second,
@@ -36,28 +33,66 @@ public class TerrainManager : MonoBehaviour
                 Edge.Smooth
             ).setFractal(4, 1.0f, 0.5f)
         );
-        chunkLength = chunk.GetComponent<TerrainChunk>().chunkLength;
-        chunks = new List<List<TerrainChunk>>();
+        terrainNoise.addChannel(
+            new Channel(
+                "Lakes",
+                Algorithm.Simplex2d,
+                scale * 100,
+                NoiseStyle.Second,
+                1f,
+                maxHeight,
+                Edge.Smooth
+            )
+        );
+        chunks = new Dictionary<int, Dictionary<int, TerrainChunk>>();
+        playerManager = FindObjectOfType<PlayerManager>(); // TODO: use player transform.forward to only generate chunks in front of player
+        Vector3 playerPosition = playerManager.GetPosition();
+        GenerateMapAroundPosition(playerPosition);
+    }
 
-        for (int x = 0; x < initialWorldSize; x++)
+    void Update() { }
+
+    void GenerateMapAroundPosition(Vector3 position)
+    {
+        Vector3 worldPosition = new Vector3(position.x / chunkLength, 0, position.z / chunkLength);
+        for (
+            int x = Mathf.FloorToInt(worldPosition.x - drawDistance / 2);
+            x < Mathf.FloorToInt(worldPosition.x + drawDistance / 2);
+            x++
+        )
         {
-            List<TerrainChunk> xChunks = new List<TerrainChunk>();
-            for (int z = 0; z < initialWorldSize; z++)
+            Dictionary<int, TerrainChunk> xChunks = new Dictionary<int, TerrainChunk>();
+            if (xChunks.ContainsKey(x))
             {
-                TerrainChunk spawnedChunk = Instantiate(
-                        chunk,
-                        new Vector3(x * chunkLength, 0, z * chunkLength),
-                        Quaternion.identity
-                    )
-                    .GetComponent<TerrainChunk>();
-                spawnedChunk.GenerateChunk(
-                    new Vector3(x * chunkLength, 0, z * chunkLength),
-                    terrainNoise,
-                    maxHeight
-                );
-                xChunks.Insert(z, spawnedChunk);
+                xChunks = chunks[x];
             }
-            chunks.Insert(x, xChunks);
+            for (
+                int z = Mathf.FloorToInt(worldPosition.z - drawDistance / 2);
+                z < Mathf.FloorToInt(worldPosition.z + drawDistance / 2);
+                z++
+            )
+            {
+                // check if chunk already exists
+                if (xChunks.ContainsKey(z))
+                {
+                    break;
+                }
+                GameObject chunkObject = Instantiate(
+                    chunk,
+                    new Vector3(x * chunkLength, 0, z * chunkLength),
+                    Quaternion.identity
+                );
+                chunkObject.transform.SetParent(transform);
+                xChunks[z] = chunkObject
+                    .GetComponent<TerrainChunk>()
+                    .New(
+                        new Vector3(x * chunkLength, 0, z * chunkLength),
+                        terrainNoise,
+                        maxHeight,
+                        chunkLength
+                    );
+            }
+            chunks[x] = xChunks;
         }
     }
 }
