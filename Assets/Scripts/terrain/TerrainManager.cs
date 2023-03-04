@@ -10,6 +10,9 @@ public class TerrainManager : MonoBehaviour
     [SerializeField]
     int drawDistance = 10;
 
+    [SerializeField]
+    Color baseColor = new Color(106f / 255, 192f / 255, 82f / 255);
+
     private PlayerManager playerManager;
     private Dictionary<int, Dictionary<int, TerrainChunk>> chunks;
     private Noise terrainNoise;
@@ -50,8 +53,6 @@ public class TerrainManager : MonoBehaviour
         GenerateMapAroundPosition(playerPosition);
     }
 
-    void Update() { }
-
     void GenerateMapAroundPosition(Vector3 position)
     {
         Vector3 worldPosition = new Vector3(position.x / chunkLength, 0, position.z / chunkLength);
@@ -89,7 +90,8 @@ public class TerrainManager : MonoBehaviour
                         new Vector3(x * chunkLength, 0, z * chunkLength),
                         terrainNoise,
                         maxHeight,
-                        chunkLength
+                        chunkLength,
+                        baseColor
                     );
             }
             chunks[x] = xChunks;

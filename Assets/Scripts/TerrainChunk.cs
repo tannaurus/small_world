@@ -21,10 +21,16 @@ public class TerrainChunk : MonoBehaviour
         _meshCollider = GetComponent<MeshCollider>();
     }
 
-    public TerrainChunk New(Vector3 position, Noise noise, int maxHeight, int chunkLength)
+    public TerrainChunk New(
+        Vector3 position,
+        Noise noise,
+        int maxHeight,
+        int chunkLength,
+        Color baseColor
+    )
     {
         worldPosition = position;
-        green = new Color(106f / 255, 192f / 255, 82f / 255);
+
         // determine how many vertices we need for the specified chunk size
         // 2 polygons per quad
         int polygonRowCount = chunkLength * 2;
@@ -53,7 +59,7 @@ public class TerrainChunk : MonoBehaviour
                     maxHeight,
                     verticesIndex,
                     noise,
-                    green
+                    baseColor
                 ).New();
                 for (int q = 0; q < 6; q++)
                 {
