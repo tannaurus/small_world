@@ -26,7 +26,8 @@ public class TerrainChunk : MonoBehaviour
         Noise noise,
         int maxHeight,
         int chunkLength,
-        Color baseColor
+        float waterLevel,
+        Color[] colors
     )
     {
         worldPosition = position;
@@ -59,13 +60,14 @@ public class TerrainChunk : MonoBehaviour
                     maxHeight,
                     verticesIndex,
                     noise,
-                    baseColor
+                    colors,
+                    waterLevel
                 ).New();
                 for (int q = 0; q < 6; q++)
                 {
                     chunkVertices[verticesIndex] = quad.vertices[q];
                     chunkTriangles[verticesIndex] = quad.triangles[q];
-                    meshColors[verticesIndex] = quad.colors[q];
+                    meshColors[verticesIndex] = quad.meshColors[q];
 
                     verticesIndex++;
                 }
@@ -103,20 +105,45 @@ public class TerrainChunk : MonoBehaviour
     }
 }
 
+struct VertMetadata
+{
+    public float height;
+    public Color color;
+
+    public VertMetadata(float height, float normalizedHeight, Color color, string type)
+    {
+        this.height = height;
+        if (type == "land")
+        {
+            this.color = new Color(
+                color.r * normalizedHeight,
+                color.g * normalizedHeight,
+                color.b * normalizedHeight
+            );
+        }
+        else
+        {
+            this.color = color;
+        }
+    }
+}
+
 class Quad
 {
     public Vector3[] vertices;
     public int[] triangles;
-    public Color[] colors;
+    public Color[] meshColors;
 
-    private Vector3 worldLocation;
-    private Vector3 relativeLocation;
+    private Vector3 _worldLocation;
+    private Vector3 _relativeLocation;
 
-    private int maxHeight;
-    private int meshIndex;
+    private int _maxHeight;
+    private int _meshIndex;
 
-    private Noise noise;
-    private Color baseColor;
+    private Noise _noise;
+    private Color[] _colors;
+
+    private float _waterLevel;
 
     public Quad(
         Vector3 worldLocation,
@@ -124,36 +151,38 @@ class Quad
         int maxHeight,
         int meshIndex,
         Noise noise,
-        Color baseColor
+        Color[] colors,
+        float waterLevel
     )
     {
-        this.worldLocation = worldLocation;
-        this.relativeLocation = relativeLocation;
-        this.maxHeight = maxHeight;
-        this.meshIndex = meshIndex;
-        this.noise = noise;
-        this.baseColor = baseColor;
+        this._worldLocation = worldLocation;
+        this._relativeLocation = relativeLocation;
+        this._maxHeight = maxHeight;
+        this._meshIndex = meshIndex;
+        this._noise = noise;
+        this._colors = colors;
+        this._waterLevel = waterLevel;
     }
 
     public Quad New()
     {
         Vector3[] v = new Vector3[]
         {
-            this.GetVertPosition(relativeLocation.x + 1, relativeLocation.z + 1),
-            this.GetVertPosition(relativeLocation.x + 1, relativeLocation.z),
-            this.GetVertPosition(relativeLocation.x, relativeLocation.z + 1),
-            this.GetVertPosition(relativeLocation.x, relativeLocation.z + 1),
-            this.GetVertPosition(relativeLocation.x + 1, relativeLocation.z),
-            this.GetVertPosition(relativeLocation.x, relativeLocation.z)
+            this.GetVertPosition(_relativeLocation.x + 1, _relativeLocation.z + 1),
+            this.GetVertPosition(_relativeLocation.x + 1, _relativeLocation.z),
+            this.GetVertPosition(_relativeLocation.x, _relativeLocation.z + 1),
+            this.GetVertPosition(_relativeLocation.x, _relativeLocation.z + 1),
+            this.GetVertPosition(_relativeLocation.x + 1, _relativeLocation.z),
+            this.GetVertPosition(_relativeLocation.x, _relativeLocation.z)
         };
 
         // populate triangles and normals
         int[] t = new int[6];
-        this.colors = new Color[6];
+        this.meshColors = new Color[6];
         for (int i = 0; i < 6; i++)
         {
-            t[i] = meshIndex + i;
-            this.colors[i] = this.GetVertColor();
+            t[i] = this._meshIndex + i;
+            this.meshColors[i] = this.GetVertColor();
         }
 
         this.vertices = v;
@@ -162,33 +191,39 @@ class Quad
         return this;
     }
 
-    private float SampleNoise(string channel, float relativeX, float relativeZ)
+    private VertMetadata GetVertMetadata(float relativeX, float relativeZ)
     {
-        return this.noise.getNoise(
-            new Vector3(this.worldLocation.x + relativeX, 0, this.worldLocation.z + relativeZ),
-            channel
+        float heightSample = this._noise.getNoise(
+            new Vector3(this._worldLocation.x + relativeX, 0, this._worldLocation.z + relativeZ),
+            "base_height"
+        );
+        float lakeSample = this._noise.getNoise(
+            new Vector3(this._worldLocation.x + relativeX, 0, this._worldLocation.z + relativeZ),
+            "lakes"
+        );
+
+        bool hasLake = this._waterLevel > lakeSample;
+        return new VertMetadata(
+            hasLake ? this._waterLevel : heightSample,
+            heightSample / this._maxHeight,
+            hasLake ? this._colors[1] : this._colors[0],
+            hasLake ? "water" : "land"
         );
     }
 
     private Vector3 GetVertPosition(float vertX, float vertZ)
     {
-        float height = this.SampleNoise("base_height", vertX, vertZ);
+        VertMetadata vertMetadata = this.GetVertMetadata(vertX, vertZ);
 
-        return new Vector3(vertX, height, vertZ);
+        return new Vector3(vertX, vertMetadata.height, vertZ);
     }
 
     private Color GetVertColor()
     {
-        float height = this.SampleNoise(
-            "base_height",
-            this.relativeLocation.x,
-            this.relativeLocation.z
+        VertMetadata vertMetadata = this.GetVertMetadata(
+            this._relativeLocation.x,
+            this._relativeLocation.z
         );
-        float normalizedHeight = height / maxHeight;
-        return new Color(
-            this.baseColor.r * normalizedHeight,
-            this.baseColor.g * normalizedHeight,
-            this.baseColor.b * normalizedHeight
-        );
+        return vertMetadata.color;
     }
 }

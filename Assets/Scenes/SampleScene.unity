@@ -457,6 +457,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chunk: {fileID: 7641491392952469692, guid: e08e649bd6e034aaea68ede456d0d796, type: 3}
   drawDistance: 10
+  colors:
+  - {r: 0.41568628, g: 0.7529412, b: 0.32156864, a: 1}
+  - {r: 0.9822222, g: 0.69803923, b: 0.4745098, a: 1}
+  waterLevel: 0.054
 --- !u!4 &1772824369
 Transform:
   m_ObjectHideFlags: 0

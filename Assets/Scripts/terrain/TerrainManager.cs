@@ -11,7 +11,14 @@ public class TerrainManager : MonoBehaviour
     int drawDistance = 10;
 
     [SerializeField]
-    Color baseColor = new Color(106f / 255, 192f / 255, 82f / 255);
+    Color[] colors = new Color[2]
+    {
+        new Color(106f / 255, 192f / 255, 82f / 255),
+        new Color(221f / 225f, 178f / 255f, 121f / 255f)
+    };
+
+    [SerializeField, Range(0.0f, 0.5f)]
+    float waterLevel = 0.4f;
 
     private PlayerManager playerManager;
     private Dictionary<int, Dictionary<int, TerrainChunk>> chunks;
@@ -34,16 +41,16 @@ public class TerrainManager : MonoBehaviour
                 1f,
                 maxHeight,
                 Edge.Smooth
-            ).setFractal(4, 1.0f, 0.5f)
+            ).setFractal(3, 2.0f, 0.3f)
         );
         terrainNoise.addChannel(
             new Channel(
-                "Lakes",
+                "lakes",
                 Algorithm.Simplex2d,
-                scale * 100,
+                scale * 10,
                 NoiseStyle.Second,
+                0f,
                 1f,
-                maxHeight,
                 Edge.Smooth
             )
         );
@@ -91,7 +98,8 @@ public class TerrainManager : MonoBehaviour
                         terrainNoise,
                         maxHeight,
                         chunkLength,
-                        baseColor
+                        waterLevel,
+                        colors
                     );
             }
             chunks[x] = xChunks;
